@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐟 AI Fish Harvest Prediction</title>
+
+    <!-- Bootstrap & Google Fonts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 50px;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            font-weight: 600;
+            color: #48cae4;
+        }
+
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            height: 45px;
+            text-align: center;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-control:focus {
+            border: 2px solid #48cae4;
+            box-shadow: 0px 0px 8px rgba(72, 202, 228, 0.8);
+        }
+
+        .btn-primary {
+            background-color: #48cae4;
+            border: none;
+            width: 100%;
+            font-size: 18px;
+            padding: 12px;
+            margin-top: 15px;
+            transition: 0.3s;
+            border-radius: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: #0096c7;
+            transform: scale(1.05);
+        }
+
+        .loader {
+            display: none;
+            margin: 10px auto;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #48cae4;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            font-size: 18px;
+            font-weight: bold;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🐟 AI-Powered Fish Harvest Prediction</h2>
+        <p>Enter fish growth parameters and predict the best harvest time!</p>
+
+        <form id="predictionForm">
+            <input type="number" class="form-control my-2" id="age" placeholder="Age (Weeks)" required>
+            <input type="number" class="form-control my-2" id="current_weight" placeholder="Current Weight (kg)" required>
+            <input type="number" class="form-control my-2" id="feed" placeholder="Feed Consumption (g/day)" required>
+            <input type="number" class="form-control my-2" id="temperature" placeholder="Water Temperature (°C)" required>
+            <input type="number" class="form-control my-2" id="oxygen" placeholder="Dissolved Oxygen (mg/L)" required>
+            <input type="number" class="form-control my-2" id="ph" placeholder="Water pH" required>
+            <input type="number" class="form-control my-2" id="density" placeholder="Stocking Density (fish/m³)" required>
+            <input type="number" class="form-control my-2" id="price" placeholder="Market Price (₹/kg)" required>
+            
+            <button type="button" class="btn btn-primary" onclick="predict()">📊 Predict Harvest</button>
+        </form>
+
+        <div class="loader" id="loading"></div>
+
+        <div class="result-box" id="result"></div>
+    </div>
+
+    <script>
+        function predict() {
+            let data = {
+                "Age (Weeks)": parseInt(document.getElementById("age").value),
+                "Current Weight (kg)": parseFloat(document.getElementById("current_weight").value),
+                "Feed Consumption (g/day)": parseFloat(document.getElementById("feed").value),
+                "Water Temperature (°C)": parseFloat(document.getElementById("temperature").value),
+                "Dissolved Oxygen (mg/L)": parseFloat(document.getElementById("oxygen").value),
+                "Water pH": parseFloat(document.getElementById("ph").value),
+                "Stocking Density (fish/m³)": parseFloat(document.getElementById("density").value),
+                "Market Price (₹/kg)": parseFloat(document.getElementById("price").value)
+            };
+
+            let resultBox = document.getElementById("result");
+            let loader = document.getElementById("loading");
+            resultBox.style.display = "none";
+            loader.style.display = "block";
+
+            fetch("/predict", {  
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.json();
+            })
+            .then(data => {
+                loader.style.display = "none";
+                resultBox.style.display = "block";
+
+                if (data.error) {
+                    resultBox.innerHTML = `⚠️ Error: ${data.error}`;
+                } else {
+                    resultBox.innerHTML = `
+                        🐟 <b>Predicted Weight:</b> ${data["Predicted Weight (kg)"]} kg<br>
+                        ⏳ <b>Best Harvest Week:</b> Week ${data["Best Harvest Week"]}<br>
+                        💰 <b>Expected Profit:</b> ₹${data["Expected Profit (₹)"]}
+                    `;
+                }
+            })
+            .catch(error => {
+                loader.style.display = "none";
+                resultBox.style.display = "block";
+                resultBox.innerHTML = `⚠️ Error in prediction! ${error.message}`;
+                console.error("Error:", error);
+            });
+        }
+    </script>
+
+</body>
+</html>
